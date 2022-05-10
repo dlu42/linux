@@ -24,6 +24,8 @@ static DECLARE_BITMAP(riscv_isa, RISCV_ISA_EXT_MAX) __read_mostly;
 #ifdef CONFIG_FPU
 __ro_after_init DEFINE_STATIC_KEY_FALSE(cpu_hwcap_fpu);
 #endif
+DEFINE_STATIC_KEY_FALSE(riscv_pause_available);
+EXPORT_SYMBOL_GPL(riscv_pause_available);
 
 /**
  * riscv_isa_extension_base() - Get base extension word
@@ -192,6 +194,7 @@ void __init riscv_fill_hwcap(void)
 				set_bit(*ext - 'a', this_isa);
 			} else {
 				SET_ISA_EXT_MAP("sscofpmf", RISCV_ISA_EXT_SSCOFPMF);
+				SET_ISA_EXT_MAP("zihintpause", RISCV_ISA_EXT_ZIHINTPAUSE);
 			}
 #undef SET_ISA_EXT_MAP
 		}
@@ -211,6 +214,10 @@ void __init riscv_fill_hwcap(void)
 		else
 			bitmap_copy(riscv_isa, this_isa, RISCV_ISA_EXT_MAX);
 
+	}
+
+	if (__riscv_isa_extension_available(riscv_isa, RISCV_ISA_EXT_ZIHINTPAUSE)) {
+		static_branch_enable(&riscv_pause_available);
 	}
 
 	/* We don't support systems with F but without D, so mask those out
